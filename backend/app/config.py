@@ -8,8 +8,13 @@ Model IDs are spec §12.3 defaults. ⚠ Slugs age fast — re-check the
 provider catalogues before changing them; treat these as snapshots.
 """
 
+import logging
+import secrets
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_log = logging.getLogger("app.config")
 
 
 class Settings(BaseSettings):
@@ -33,14 +38,39 @@ class Settings(BaseSettings):
         "mysql+pymysql://atlas:atlas_secret_change_me@mysql:3306/atlas_ielts"
     )
 
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_database_url(cls, v: str) -> str:
+        # Managed-host shorthands: Render Postgres hands out a
+        # `postgres://` URL — SQLAlchemy only accepts `postgresql://`
+        # (psycopg2 is its default driver for that scheme).
+        if v.startswith("postgres://"):
+            return "postgresql://" + v[len("postgres://"):]
+        return v
+
     # ── Security ──────────────────────────────────────────────
-    jwt_secret: str
+    # REQUIRED in production — set JWT_SECRET in the host's env
+    # (Render dashboard / render.yaml). If it's missing the app no
+    # longer hard-crashes at boot (alembic imports this module before
+    # serving, so the crash killed the whole deploy); instead an
+    # ephemeral secret is minted per boot with a loud warning.
+    # ⚠ An ephemeral secret invalidates every token on restart —
+    # set the env var for stable sign-ins.
+    jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 43200   # 30 days
 
     @field_validator("jwt_secret")
     @classmethod
     def _jwt_secret_strength(cls, v: str) -> str:
+        if not v:
+            generated = secrets.token_urlsafe(48)
+            _log.warning(
+                "JWT_SECRET is not set — minted an EPHEMERAL secret for this "
+                "boot only. Every restart/deploy invalidates all sessions. "
+                "Set JWT_SECRET in the environment for stable sign-ins."
+            )
+            return generated
         if len(v) < 32:
             raise ValueError(
                 "JWT_SECRET must be at least 32 characters. Generate one with: "
@@ -59,7 +89,7 @@ class Settings(BaseSettings):
     model_reading_qa: str = "deepseek/deepseek-v4-flash"
     model_reading_qa_targeted: str = "qwen/qwen3.7-plus"
     model_reading_insight: str = "z-ai/glm-5.2"
-    model_listening_gen: str = "deepseek/deepseek-v4-pro"
+    model_listening_gen: str = "deepseek/deepseek-v4-flash"
     model_listening_qa: str = "deepseek/deepseek-v4-flash"
     model_writing_gen: str = "google/gemini-3.8-flash"
     model_writing_grade: str = "openai/gpt-5.6-luna"

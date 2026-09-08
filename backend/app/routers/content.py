@@ -186,6 +186,10 @@ async def listening_generate(
             )
         )
         part = data.get("part")
+        if not isinstance(part, dict) and isinstance(data.get("transcript"), list):
+            # Some model families drift to emitting the part object at the
+            # TOP LEVEL (no "part" wrapper) — unwrap instead of failing.
+            part = data
         if (
             not isinstance(part, dict)
             or not isinstance(part.get("transcript") or [], list)

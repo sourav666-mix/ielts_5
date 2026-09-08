@@ -34,7 +34,10 @@ from app.ai.client import AIError
 from app.config import settings
 
 # §12.3's named Groq fallback (open-weight, LPU-fast).
-GROQ_FALLBACK_MODEL = "llama-3.3-70b-versatile"
+# ⚠ llama-3.3-70b-versatile was RETIRED from Groq's catalogue (verified
+# against GET /openai/v1/models) — every chain that fell back to it
+# ended in a 400. gpt-oss-120b is its current equivalent (verified 200).
+GROQ_FALLBACK_MODEL = "openai/gpt-oss-120b"
 
 
 class Task(str, Enum):
@@ -186,7 +189,8 @@ async def chat_with_fallback(
     max_tokens: int | None = None,
     read_timeout: float | None = None,
     deadline_s: float | None = None,
-) -> str:
+    json_mode: bool = False,
+) -> Any:
     chain = model_chain(task, targeted=targeted)
     temp = TASK_TEMPERATURES.get(task, 0.7) if temperature is None else temperature
     default_read = TASK_READ_TIMEOUTS.get(task, 220.0)
@@ -205,7 +209,7 @@ async def chat_with_fallback(
         read = read_timeout if read_timeout is not None else default_read
         read = min(read, max(20.0, end - time.monotonic()))
         try:
-            return await client.chat(
+            content = await client.chat(
                 route.provider,
                 route.model,
                 messages,
@@ -214,6 +218,13 @@ async def chat_with_fallback(
                 read_timeout=read,
                 reasoning=reasoning_for(route.model),
             )
+            # json_mode parses INSIDE the loop: a model that answers HTTP
+            # 200 with unreadable JSON burns its own attempt and the next
+            # chain entry gets its full shot — identical to any other
+            # failure. (Parsing used to sit AFTER the loop, so one model's
+            # format drift failed the whole request even with a healthy
+            # fallback sitting right there in the chain.)
+            return client.extract_json(content) if json_mode else content
         except AIError as error:
             last_error = error
             continue
@@ -227,5 +238,4 @@ async def chat_json_with_fallback(
     **kwargs: Any,
 ) -> Any:
     """chat + robust JSON extraction — the shape every content router uses."""
-    content = await chat_with_fallback(task, messages, **kwargs)
-    return client.extract_json(content)
+    return await chat_with_fallback(task, messages, json_mode=True, **kwargs)

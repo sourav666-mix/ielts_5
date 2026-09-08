@@ -1,0 +1,42 @@
+# ==============================================================
+# ATLAS IELTS Academy — Render blueprint
+#
+# Deploy the whole stack from the repo root with a Blueprint:
+#   Render Dashboard → New → Blueprint → pick this repo.
+# Or wire the env vars below onto an existing Web Service by hand —
+# they are EXACTLY what the backend image needs at boot (the Dockerfile
+# CMD runs `alembic upgrade head` first, which imports app.config, so
+# DATABASE_URL + JWT_SECRET must exist BEFORE the container starts).
+#
+# ⚠ .env is gitignored and .dockerignore'd — it NEVER reaches Render.
+#   All runtime config must come from these env vars.
+# ==============================================================
+
+services:
+  - type: web
+    name: atlas-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health          # main.py's liveness probe
+    plan: starter                     # free tier sleeps & kills long AI generations
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: atlas-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true           # Render mints + PERSISTS a strong secret
+      - key: OPENROUTER_API_KEY
+        sync: false                   # paste in the Render dashboard (secret)
+      - key: GROQ_API_KEY
+        sync: false                   # paste in the Render dashboard (secret)
+      - key: FRONTEND_ORIGIN
+        sync: false                   # e.g. https://atlas-ielts.vercel.app
+                                      # comma-separated for extra origins
+
+databases:
+  - name: atlas-db
+    databaseName: atlas_ielts
+    plan: basic-256mb                 # `free` exists but expires after 30 days
