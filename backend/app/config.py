@@ -41,11 +41,16 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _normalize_database_url(cls, v: str) -> str:
-        # Managed-host shorthands: Render Postgres hands out a
-        # `postgres://` URL — SQLAlchemy only accepts `postgresql://`
-        # (psycopg2 is its default driver for that scheme).
+        # Managed-host shorthands:
+        # · Render Postgres hands out `postgres://` — SQLAlchemy only
+        #   accepts `postgresql://` (psycopg2 is its default driver).
+        # · Railway MySQL hands out `mysql://` — SQLAlchemy resolves
+        #   that to the MySQLdb driver, which isn't installed; the app
+        #   ships PyMySQL, so rewrite to `mysql+pymysql://`.
         if v.startswith("postgres://"):
             return "postgresql://" + v[len("postgres://"):]
+        if v.startswith("mysql://"):
+            return "mysql+pymysql://" + v[len("mysql://"):]
         return v
 
     # ── Security ──────────────────────────────────────────────
