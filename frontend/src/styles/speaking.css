@@ -1,0 +1,475 @@
+/* ============================================================
+   ATLAS IELTS Academy — Speaking module styles
+   Tokens only (§15.1). Shared pieces (.cue-card, .cue-bullets,
+   .mic-btn/.recording, .interim, .fb-block*, .band-pill,
+   .progress, .paper, .kicker, .module-header) come from Files
+   10/22; .session-controls comes from reading.css (imported by
+   the session, as in Batches 6–7).
+   ============================================================ */
+
+/* ── Rolling question card ─────────────────────────────────── */
+
+.speak-q {
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.6vw, 24px);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Mic-or-type segmented toggle */
+.mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--ink-700);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.mode-opt {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 8px 16px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.mode-opt.active { background: var(--gold-08); color: var(--gold-bright); }
+.mode-opt:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.capture-guide { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.cap-row { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; }
+.rec-time {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--red-bright);
+  font-variant-numeric: tabular-nums;
+}
+.interim-live { min-height: 3.5em; }
+.typed-submit { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+
+/* ── Part 2 stages ─────────────────────────────────────────── */
+
+.turn-stage { text-align: center; padding: var(--sp-3) 0; }
+.big-count {
+  font-family: var(--font-mono);
+  font-size: clamp(34px, 8vw, 48px);
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright);
+}
+.big-count.warn { color: var(--gold-bright); }
+.big-count.danger { color: var(--red-bright); }
+.count-label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+.timesup-note { color: var(--red-bright); font-size: 14px; margin: 0; }
+
+/* ── Per-answer feedback ───────────────────────────────────── */
+
+.reaction-line {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--gold-bright);
+  margin: 0;
+}
+
+/* ── Session review (results) ──────────────────────────────── */
+
+.round-item {
+  border: 1px solid var(--ink-700);
+  border-radius: var(--r-md);
+  background: var(--ink-900);
+  overflow: hidden;
+}
+.round-item-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.round-item-head:hover { background: var(--ink-850); }
+.round-item-body { padding: var(--sp-2) var(--sp-4) var(--sp-4); border-top: 1px solid var(--ink-800); }
+.ans-block { padding: var(--sp-3) 0; border-bottom: 1px dashed var(--ink-800); }
+.ans-block:last-child { border-bottom: none; }
+.ans-q { font-size: 13.5px; color: var(--text-dim); line-height: 1.5; }
+
+.pron-note {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  border-left: 3px solid var(--ink-600);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+/* ════════════════════════════════════════════════════════════
+   Conversation turn — natural voice exchange UI (§7.4)
+   Chat-style layout: coach left with avatar + voice bars, the
+   student right with a pulsing live mic. Mobile-first; refined
+   on desktop with a centred 760px conversation column.
+   ════════════════════════════════════════════════════════════ */
+
+.convo-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.convo-row { display: flex; align-items: flex-end; gap: var(--sp-3); }
+.convo-row.coach { justify-content: flex-start; }
+.convo-row.user { justify-content: flex-end; }
+
+.convo-avatar {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--gold-bright), #8a6a28);
+  color: #1c1608;
+  box-shadow: var(--shadow-1);
+}
+
+.convo-bubble {
+  max-width: min(600px, 88%);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-lg);
+  line-height: 1.55;
+  box-shadow: var(--shadow-1);
+}
+.convo-bubble.coach-bubble {
+  background: var(--ink-850);
+  border: 1px solid var(--ink-700);
+  border-top-left-radius: 6px;
+}
+.convo-bubble.user-bubble {
+  background: var(--gold-15);
+  border: 1px solid rgba(200, 155, 60, 0.25);
+  border-top-right-radius: 6px;
+}
+.convo-you { margin: 0; color: var(--text); }
+.convo-bubble.writing { display: flex; flex-direction: column; gap: var(--sp-3); }
+.convo-bubble.writing .textarea { min-height: 96px; }
+
+.convo-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Voice bars — the coach is speaking */
+.wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+  margin-bottom: var(--sp-2);
+}
+.wave i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--gold-bright);
+  transform-origin: bottom;
+  animation: convo-wave 1s ease-in-out infinite;
+}
+.wave i:nth-child(1) { animation-delay: 0s; }
+.wave i:nth-child(2) { animation-delay: 0.12s; }
+.wave i:nth-child(3) { animation-delay: 0.24s; }
+.wave i:nth-child(4) { animation-delay: 0.36s; }
+.wave i:nth-child(5) { animation-delay: 0.48s; }
+@keyframes convo-wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+/* Live mic — pulsing while listening */
+.mic-live {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--red-12);
+  color: var(--red-bright);
+  animation: mic-pulse 1.6s ease-out infinite;
+}
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(212, 106, 106, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(212, 106, 106, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 106, 106, 0); }
+}
+.listen-head { display: flex; align-items: center; gap: var(--sp-3); }
+.listen-label { font-weight: 600; color: var(--red-bright); font-size: 14px; }
+.listen-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+.silence-hint { font-size: 13px; color: var(--gold-bright); }
+.convo-hint { font-size: 13px; color: var(--text-dim); }
+.convo-caption { min-height: 3em; }
+.convo-caption.caret::after {
+  content: '▍';
+  color: var(--gold-bright);
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+/* Thinking — the coach is listening back */
+.thinking-row { display: flex; align-items: center; gap: var(--sp-3); }
+.dots { display: inline-flex; gap: 4px; }
+.dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Best answer — the model response to the exact question */
+.best-answer { border-left: 3px solid var(--green-bright); }
+
+@media (max-width: 640px) {
+  .convo-avatar { width: 36px; height: 36px; font-size: 17px; }
+  .convo-bubble { max-width: 100%; padding: var(--sp-4); }
+  .mic-live { width: 52px; height: 52px; }
+  .listen-foot .btn { flex: 1; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave i,
+  .mic-live,
+  .dots i,
+  .convo-caption.caret::after { animation: none; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   Voice Orb — v2 §15 expanded conversational states
+   The state list IS the interaction contract: the ring is the
+   "you can jump in" affordance; its absence on Part 2 is the
+   explicit no-interrupt signal. Rendering is pure CSS — same
+   technique family as v1's wave/mic-live pieces.
+   ════════════════════════════════════════════════════════════ */
+
+.voice-orb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.orb-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f7e2a0, #D4AF37 48%, #7A5A16 100%);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.35);
+  transition: box-shadow var(--t-fast), filter var(--t-fast), opacity var(--t-fast);
+}
+
+/* Idle — slow breathing pulse, muted gold */
+.orb-idle .orb-core { animation: orb-breathe 3.6s ease-in-out infinite; opacity: 0.75; }
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.06); opacity: 0.9; }
+}
+
+/* Speaking — gold gradient sweep */
+.orb-speaking-interruptible .orb-core,
+.orb-speaking-protected .orb-core {
+  background: linear-gradient(120deg, #7A5A16, #D4AF37 30%, #F2DE9B 50%, #D4AF37 70%, #7A5A16);
+  background-size: 220% 220%;
+  animation: orb-sweep 2.4s linear infinite;
+}
+@keyframes orb-sweep {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+/* Speaking-INTERRUPTIBLE — the thin bright ring: "you can jump in" */
+.orb-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid rgba(242, 222, 155, 0.9);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.55);
+  animation: orb-ring-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes orb-ring-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+/* Speaking-PROTECTED — deliberately NO ring (§15) */
+
+/* Listening — steady driven pulse */
+.orb-listening .orb-core {
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.55);
+  animation: orb-listen 1.1s ease-in-out infinite;
+}
+@keyframes orb-listen {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
+
+/* Backchannel — one brief silent glow-shift (§8; never a sound) */
+.orb-backchannel .orb-core {
+  box-shadow: 0 0 22px rgba(242, 222, 155, 0.85), 0 0 6px rgba(212, 175, 55, 0.9);
+  filter: brightness(1.25);
+}
+
+/* Thinking — slow rotating gradient, calmer than listening */
+.orb-thinking .orb-core {
+  background: conic-gradient(from 0deg, #7A5A16, #D4AF37, #F2DE9B, #7A5A16);
+  animation: orb-think 2.8s linear infinite;
+  filter: saturate(0.85);
+}
+@keyframes orb-think {
+  0% { transform: rotate(0deg) scale(0.97); }
+  100% { transform: rotate(360deg) scale(0.97); }
+}
+
+/* Confirming — faint green wash over the gold */
+.orb-confirming .orb-core {
+  background: radial-gradient(circle at 35% 30%, #d9f2dc, #4CAF7D 55%, #2E7D53 100%);
+  box-shadow: 0 0 12px rgba(76, 175, 125, 0.45);
+}
+
+/* §7 — Part 2's explicit protected caption */
+.protected-note {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+.protected-note::before {
+  content: '● ';
+  color: var(--red-bright);
+  font-size: 10px;
+  vertical-align: 2px;
+}
+
+/* §9 — the thinking acknowledgment, shown where it's spoken */
+.convo-ack {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14.5px;
+  color: var(--gold-bright);
+  margin: 8px 0 0;
+}
+
+/* §12 — hands-free continue hint under the feedback card */
+.voice-continue-hint {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  border-left: 3px solid var(--gold-08);
+  padding: var(--sp-2) var(--sp-3);
+  margin: 0;
+}
+.voice-continue-hint strong { color: var(--gold-bright); }
+
+@media (max-width: 640px) {
+  .voice-orb { width: 38px; height: 38px; }
+  .orb-ring { inset: -4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-idle .orb-core,
+  .orb-speaking-interruptible .orb-core,
+  .orb-speaking-protected .orb-core,
+  .orb-listening .orb-core,
+  .orb-thinking .orb-core,
+  .orb-ring { animation: none; }
+  .orb-backchannel .orb-core { filter: none; }
+}
+
+/* Window-reset interstitial */
+.window-reset {
+  text-align: center;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+/* ── VoicePicker (§13.5 — who coaches you) ───────────────────── */
+
+.voice-picker {
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.voice-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.voice-picker-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.voice-picker-copy {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.voice-picker-copy .kicker {
+  margin-bottom: 2px;
+}
+
+.voice-picker-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.voice-select {
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 1px solid var(--ink-600);
+  border-radius: var(--r-sm);
+  background: var(--ink-800);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.voice-select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  .voice-picker-controls {
+    width: 100%;
+    margin-left: 0;
+  }
+  .voice-select { flex: 1; }
+}
+
+@media (max-width: 640px) {
+  .cap-row { gap: var(--sp-3); }
+}

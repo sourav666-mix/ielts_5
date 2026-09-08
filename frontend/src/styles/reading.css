@@ -1,0 +1,106 @@
+/* ============================================================
+   ATLAS IELTS Academy — Reading module styles
+   Tokens only (§15.1); design-system.css stays the sole colour
+   source. Shared pieces (tabs, split, paper, OMR, review) come
+   from Files 10/22 — this sheet adds reading-specific layout.
+   ============================================================ */
+
+/* Session header controls (timer + submit) */
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+/* Lettered paragraphs — A, B, C… for MATCHING_INFORMATION.
+   Counters live on the wrapper so VocabText needs no changes. */
+.passage-lettered .paper { counter-reset: atlas-para; }
+.passage-lettered .paper p { counter-increment: atlas-para; }
+.passage-lettered .paper p::before {
+  content: counter(atlas-para, upper-alpha);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-text);
+  opacity: 0.6;
+  margin-right: 10px;
+}
+
+/* Question map — 40 chips, answered state, active passage */
+.qmap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 4px;
+}
+.qmap-chip {
+  appearance: none;
+  min-height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--ink-900);
+  border: 1px solid var(--ink-700);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+  font-variant-numeric: tabular-nums;
+}
+.qmap-chip:hover { border-color: var(--ink-600); color: var(--text); }
+.qmap-chip.answered {
+  border-color: var(--green);
+  color: var(--green-bright);
+  background: var(--green-12);
+}
+.qmap-chip.here { border-color: var(--gold); }
+
+/* Per-type accuracy rows (results) */
+.type-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ink-800);
+}
+.type-row:last-child { border-bottom: none; }
+.type-name { flex: 1 1 180px; font-size: 14px; }
+.type-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.minibar {
+  width: 110px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--ink-800);
+  overflow: hidden;
+  flex: none;
+}
+.minibar-fill { display: block; height: 100%; border-radius: var(--r-pill); }
+.minibar-fill.green { background: var(--green); }
+.minibar-fill.gold  { background: var(--gold); }
+.minibar-fill.red   { background: var(--red); }
+
+/* Results hero */
+.band-pill-lg {
+  font-size: 22px;
+  min-width: 96px;
+  padding: 8px 18px;
+}
+
+/* Coaching insight body */
+.insight-body p { margin-bottom: 10px; }
+.insight-body p:last-child { margin-bottom: 0; }
+
+/* Bottom submit bar */
+.submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.submit-row .small { flex: 1 1 240px; }

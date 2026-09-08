@@ -1,0 +1,101 @@
+/* ============================================================
+   ATLAS IELTS Academy — component-level styles
+   Companion sheet to design-system.css (File 10). Everything
+   here references design tokens only — no literal colors — so
+   the palette stays single-sourced (§15.1).
+   ============================================================ */
+
+/* Brand link must not underline like body links */
+.brand { text-decoration: none; }
+.brand:hover { text-decoration: none; }
+
+.topbar-pill svg { vertical-align: -1px; margin-right: 4px; }
+
+/* ── Question blocks (QuestionRenderer — Reading & Listening) ── */
+
+.question-block {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ink-800);
+}
+.question-block:last-child { border-bottom: none; }
+
+.q-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.q-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+.q-prompt {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.q-wordlimit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+}
+.q-wordlimit.over { color: var(--red-bright); }
+
+/* ── Review rows (ResultsReview) ───────────────────────────── */
+
+.review-item { padding: 4px 0; }
+
+.review-answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.review-answers b { font-weight: 600; }
+
+.review-explain {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--ink-850);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* ── Warm-up cards (§8.2 vocabulary / §8.3 retrieval) ──────── */
+
+.warmup-card {
+  background: var(--ink-850);
+  border: 1px dashed var(--ink-600);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+}
+.warmup-progress { display: flex; gap: 6px; margin-top: 12px; }
+.warmup-dot { height: 8px; flex: 1; border-radius: 4px; background: var(--ink-800); }
+.warmup-dot.done { background: var(--green); }
+.warmup-dot.now  { background: var(--gold); }
+
+/* ── Charts ─────────────────────────────────────────────────── */
+
+.chart-holder { position: relative; height: 300px; }
+@media (max-width: 640px) { .chart-holder { height: 240px; } }
+
+/* ── Module view headers (Batches 5–8) ─────────────────────── */
+
+.module-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}

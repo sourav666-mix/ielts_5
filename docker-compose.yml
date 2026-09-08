@@ -1,0 +1,71 @@
+# ==============================================================
+# ATLAS IELTS Academy — one command runs everything
+#   cp .env.example .env  (fill in keys)  →  docker compose up -d --build
+# ==============================================================
+
+name: atlas-ielts-academy
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: atlas_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret_change_me}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-atlas_ielts}
+      MYSQL_USER: ${MYSQL_USER:-atlas}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-atlas_secret_change_me}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"          # host 3307 so a local MySQL is never shadowed
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root",
+             "-p${MYSQL_ROOT_PASSWORD:-root_secret_change_me}"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./backend
+    container_name: atlas_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Composed from the MYSQL_* values above so dev and Docker agree exactly
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-atlas}:${MYSQL_PASSWORD:-atlas_secret_change_me}@mysql:3306/${MYSQL_DATABASE:-atlas_ielts}
+    volumes:
+      - ./backend:/app          # hot-reload source mount
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    image: node:20-alpine
+    container_name: atlas_frontend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules   # keep deps inside the container
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+  frontend_node_modules:

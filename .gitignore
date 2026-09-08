@@ -1,0 +1,49 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# ── Builds ────────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Environment & secrets (NEVER commit these) ───────────────
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ── Database ──────────────────────────────────────────────────
+*.sqlite3
+*.db
+
+# ── Editors & OS ──────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Logs & runtime ────────────────────────────────────────────
+*.log
+npm-debug.log*
+uploads/
+certs/
+
+# ── Local deployment-testing artifacts ────────────────────────
+atlas-test-token.txt

@@ -1,0 +1,120 @@
+/* ============================================================
+   ATLAS IELTS Academy — view-level styles
+   Onboarding, dashboard, and the shared warm-up components.
+   Tokens only (§15.1) — design-system.css stays the sole source
+   of colour truth. Imported (idempotently) by every file that
+   uses these classes.
+   ============================================================ */
+
+/* ── Onboarding ────────────────────────────────────────────── */
+
+.onboard-wrap { max-width: 720px; margin: 0 auto; }
+
+.onboard-letter .kicker { margin-bottom: var(--sp-2); }
+.onboard-letter h1 { margin-bottom: var(--sp-4); }
+.onboard-letter p:last-child { margin-bottom: 0; }
+
+.band-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 10px;
+  margin: var(--sp-4) 0 var(--sp-2);
+}
+.band-option {
+  appearance: none;
+  cursor: pointer;
+  background: var(--ink-900);
+  border: 1px solid var(--ink-700);
+  border-radius: var(--r-md);
+  padding: 14px 10px;
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.band-option:hover { border-color: var(--ink-600); }
+.band-option.selected { border-color: var(--gold); background: var(--gold-08); }
+.bo-band {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.band-option.selected .bo-band { color: var(--gold-bright); }
+.bo-hint { font-size: 11px; color: var(--text-dim); text-align: center; line-height: 1.4; }
+
+.step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+.step-error { color: var(--red-bright); font-size: 13px; }
+
+/* ── Dashboard hero ────────────────────────────────────────── */
+
+.hero-grid { display: grid; gap: var(--sp-5); align-items: end; }
+@media (min-width: 900px) { .hero-grid { grid-template-columns: minmax(200px, auto) 1fr; } }
+.hero-note { font-size: 14px; color: var(--text-dim); margin-top: 4px; max-width: 420px; }
+
+/* ── Day TOC (§2.3) ────────────────────────────────────────── */
+
+.toc-body { display: flex; flex-direction: column; }
+.toc-side { display: flex; align-items: center; gap: var(--sp-2); flex: none; }
+.toc-chevron { color: var(--ink-600); font-family: var(--font-mono); font-size: 20px; line-height: 1; }
+
+.advance-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--ink-900);
+  border: 1px solid var(--ink-700);
+  border-radius: var(--r-lg);
+}
+.advance-hint { flex: 1; min-width: 220px; font-size: 14px; color: var(--text-dim); }
+
+/* ── Notes (phase banner, offline, difficulty flags) ───────── */
+
+.day-note {
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--ink-900);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.day-note strong { color: var(--text); font-weight: 600; }
+
+/* ── Warm-ups (§8.2 / §8.3) ────────────────────────────────── */
+
+.warmup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.warmup-word {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  margin-top: 4px;
+}
+.warmup-reveal { margin-top: var(--sp-3); padding-top: var(--sp-3); border-top: 1px dashed var(--ink-600); }
+.warmup-example { font-style: italic; color: var(--text-dim); }
+.warmup-choices { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-4); }
+.warmup-check { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+
+/* ── Programme complete (Day 270) ──────────────────────────── */
+
+.complete-hero { text-align: center; padding: var(--sp-7) var(--sp-4); }
+.complete-hero .hero-band { margin: var(--sp-2) 0; }
+.complete-stats { margin-top: var(--sp-5); justify-items: center; }

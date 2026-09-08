@@ -1,0 +1,94 @@
+/* ==============================================================
+   ATLAS IELTS Academy — listening view styles
+   Everything here scopes to the listening session; shared
+   session classes (.session-controls, .tabs, .timer) live in
+   reading.css and the design system.
+   ============================================================== */
+
+/* ── AudioPane ───────────────────────────────────────────────── */
+
+.audio-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.audio-pane.is-playing {
+  border-color: var(--gold, #C9A227);
+}
+
+.audio-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.audio-pane.is-playing .audio-icon {
+  animation: audio-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes audio-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.12); }
+}
+
+.audio-progress {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--ink-800, #1C2635);
+  overflow: hidden;
+}
+
+.audio-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--gold, #C9A227);
+  transition: width 240ms ease;
+}
+
+/* ── Part tabs ───────────────────────────────────────────────── */
+
+.tab-done {
+  margin-left: 6px;
+  color: var(--green, #4CAF7D);
+  font-weight: 600;
+}
+
+.tab-live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--gold, #C9A227);
+  animation: audio-pulse 1.2s ease-in-out infinite;
+}
+
+/* ── Map-plan / label questions (MapPlan.jsx) ────────────────── */
+
+.map-plan {
+  display: grid;
+  gap: 8px;
+}
+
+.map-feature {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--ink-700, #2A3547);
+  border-radius: 8px;
+}
+
+.map-feature .map-letter {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--gold, #C9A227);
+}
+
+.map-feature .map-answer {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--green, #4CAF7D);
+}
