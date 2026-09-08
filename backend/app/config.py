@@ -29,29 +29,10 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"      # File 14 calls /api/... via the Vite proxy
     project_name: str = "ATLAS IELTS Academy"
 
-    # ── Database ──────────────────────────────────────────────
-    # Default = the docker-compose service name (compose injects the
-    # exact same URL). Local runs override with DATABASE_URL —
-    # backend/.env ships with a zero-setup SQLite URL so the app
-    # runs with no Docker/MySQL installed.
-    database_url: str = (
-        "mysql+pymysql://atlas:atlas_secret_change_me@mysql:3306/atlas_ielts"
-    )
-
-    @field_validator("database_url")
-    @classmethod
-    def _normalize_database_url(cls, v: str) -> str:
-        # Managed-host shorthands:
-        # · Render Postgres hands out `postgres://` — SQLAlchemy only
-        #   accepts `postgresql://` (psycopg2 is its default driver).
-        # · Railway MySQL hands out `mysql://` — SQLAlchemy resolves
-        #   that to the MySQLdb driver, which isn't installed; the app
-        #   ships PyMySQL, so rewrite to `mysql+pymysql://`.
-        if v.startswith("postgres://"):
-            return "postgresql://" + v[len("postgres://"):]
-        if v.startswith("mysql://"):
-            return "mysql+pymysql://" + v[len("mysql://"):]
-        return v
+    # ── Persistence (NO DATABASE — one JSON file, see store.py) ─
+    # Point DATA_FILE at a mounted-disk path (e.g. /data/atlas_data.json
+    # on Render) to keep data across redeploys.
+    data_file: str = "./atlas_data.json"
 
     # ── Security ──────────────────────────────────────────────
     # REQUIRED in production — set JWT_SECRET in the host's env

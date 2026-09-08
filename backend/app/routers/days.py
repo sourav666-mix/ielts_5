@@ -8,13 +8,11 @@ POST /days/advance is the single authoritative §2.3 transition.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Path
-from sqlalchemy.orm import Session
 
-from app.database import get_db
 from app.deps import get_current_user
-from app.models import User
 from app.schemas import DayRecordData
 from app.services import day_service
+from app.store import User
 
 router = APIRouter(prefix="/days", tags=["days"])
 
@@ -34,10 +32,9 @@ async def get_day(
     phase: str,
     day: int = Path(ge=1),
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> dict:
     _validate_phase(phase)
-    row = day_service.get_or_create_day(db, user.id, phase, day)
+    row = day_service.get_or_create_day(user.id, phase, day)
     return row.record
 
 
@@ -47,7 +44,6 @@ async def put_day(
     day: int = Path(ge=1),
     data: DayRecordData = None,
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> dict:
     _validate_phase(phase)
     if user.profile is None or (user.profile.phase, user.profile.day) != (phase, day):
@@ -58,13 +54,12 @@ async def put_day(
                 "it usually sorts itself out. Everything you finished is saved."
             ),
         )
-    return day_service.put_day(db, user.id, phase, day, data)
+    return day_service.put_day(user.id, phase, day, data)
 
 
 @router.post("/advance")
 async def advance_day(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> dict:
     """Server-authoritative §2.3 advance → {profile, day, history} (File 18 adopts all three)."""
-    return day_service.advance_day(db, user)
+    return day_service.advance_day(user)

@@ -10,13 +10,8 @@ uvicorn~=0.32
 python-multipart~=0.0.17        # FastAPI Form/File — required by /writing/grade
                                  # (multipart §6.5) and /stt (audio §13.4)
 
-# ── Database ──────────────────────────────────────────────────
-SQLAlchemy~=2.0.36
-alembic~=1.13
-PyMySQL~=1.1.1                  # the driver in DATABASE_URL
-                                 # (1.x defaults to charset utf8mb4 — see database.py)
-psycopg2-binary~=2.9            # the driver for postgresql+psycopg2:// URLs
-                                 # (Render PostgreSQL — unused by MySQL/SQLite setups)
+# ── Persistence ───────────────────────────────────────────────
+#   NO database: a JSON file store (store.py) — stdlib only.
 
 # ── Config & validation ──────────────────────────────────────
 pydantic~=2.9

@@ -24,13 +24,18 @@ import math
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
-from app.models import DayRecord, User
 from app.schemas import DayRecordData
 from app.services import history_service
 from app.services.profile_service import profile_to_dict
+from app.store import (
+    DayRecord,
+    User,
+    day_records_create,
+    day_records_find,
+    profiles_find_by_user,
+    save,
+)
 
 PHASE_LENGTHS = {"practice": 150, "mock": 120}
 MODULES = ("reading", "listening", "writing", "speaking")
@@ -75,26 +80,11 @@ def fresh_day_record(phase: str, day: int) -> dict:
 
 # ── Reads / writes ───────────────────────────────────────────
 
-def _get_day_row(db: Session, user_id: int, phase: str, day: int) -> DayRecord | None:
-    return db.execute(
-        select(DayRecord).where(
-            DayRecord.user_id == user_id,
-            DayRecord.phase == phase,
-            DayRecord.day == day,
-        )
-    ).scalar_one_or_none()
-
-
-def get_or_create_day(db: Session, user_id: int, phase: str, day: int) -> DayRecord:
-    """Creation commits on its own — a GET that creates must persist."""
-    row = _get_day_row(db, user_id, phase, day)
+def get_or_create_day(user_id: int, phase: str, day: int) -> DayRecord:
+    """Creation persists immediately — a GET that creates must save."""
+    row = day_records_find(user_id, phase, day)
     if row is None:
-        row = DayRecord(
-            user_id=user_id, phase=phase, day=day,
-            record=fresh_day_record(phase, day),
-        )
-        db.add(row)
-        db.commit()
+        row = day_records_create(user_id, phase, day, fresh_day_record(phase, day))
     return row
 
 
@@ -108,22 +98,18 @@ def _is_dirty(record: dict) -> bool:
     return False
 
 
-def _ensure_fresh_day(db: Session, user_id: int, phase: str, day: int) -> DayRecord:
-    """Create-or-reset — the NEXT day must always start clean (no commit;
-    the caller owns the transaction)."""
-    row = _get_day_row(db, user_id, phase, day)
+def _ensure_fresh_day(user_id: int, phase: str, day: int) -> DayRecord:
+    """Create-or-reset — the NEXT day must always start clean (the caller
+    persists via the advance's single save())."""
+    row = day_records_find(user_id, phase, day)
     if row is None:
-        row = DayRecord(
-            user_id=user_id, phase=phase, day=day,
-            record=fresh_day_record(phase, day),
-        )
-        db.add(row)
+        row = day_records_create(user_id, phase, day, fresh_day_record(phase, day))
     elif _is_dirty(row.record):
         row.record = fresh_day_record(phase, day)
     return row
 
 
-def put_day(db: Session, user_id: int, phase: str, day: int, data: DayRecordData) -> dict:
+def put_day(user_id: int, phase: str, day: int, data: DayRecordData) -> dict:
     """Envelope-validated full-record write. model_dump(by_alias=True)
     preserves every camelCase extra (content, answers, warmupsDone,
     plays, modelAnswer, speaking rounds…)."""
@@ -135,10 +121,10 @@ def put_day(db: Session, user_id: int, phase: str, day: int, data: DayRecordData
                 "and it usually sorts itself out."
             ),
         )
-    row = get_or_create_day(db, user_id, phase, day)
+    row = get_or_create_day(user_id, phase, day)
     payload = data.model_dump(by_alias=True)
-    row.record = payload  # fresh assignment — JSON mutation discipline
-    db.commit()
+    row.record = payload  # fresh assignment — mutation discipline
+    save()
     return payload
 
 
@@ -182,7 +168,9 @@ def _join_and(items: list[str]) -> str:
 
 # ── §2.3 ADVANCE — the single authoritative transition ───────
 
-def advance_day(db: Session, user: User) -> dict:
+def advance_day(user: User) -> dict:
+    """Server-authoritative §2.3 advance → {profile, day, history} (File 18 adopts all three).
+    Database-free: profile rides on user.profile; one save() at the end persists."""
     profile = user.profile
     if profile is None:
         raise HTTPException(
@@ -199,7 +187,7 @@ def advance_day(db: Session, user: User) -> dict:
         )
 
     phase, day = profile.phase, profile.day
-    row = _get_day_row(db, user.id, phase, day)
+    row = day_records_find(user.id, phase, day)
     record = row.record if row is not None else None
     if not record:
         raise HTTPException(
@@ -246,9 +234,8 @@ def advance_day(db: Session, user: User) -> dict:
     else:
         new_streak = 1
 
-    # 4 ── history append (idempotent; advance owns the commit)
+    # 4 ── history append (idempotent; persists immediately)
     history_service.append_entry(
-        db,
         user.id,
         phase=phase,
         day=day,
@@ -279,13 +266,13 @@ def advance_day(db: Session, user: User) -> dict:
     if completed:
         final_row = row
     else:
-        final_row = _ensure_fresh_day(db, user.id, new_phase, new_day)
+        final_row = _ensure_fresh_day(user.id, new_phase, new_day)
 
-    db.commit()
+    save()   # profile mutations + (possibly reset) next-day record
 
     # File 18's advanceDay adopts exactly this shape.
     return {
         "profile": profile_to_dict(profile),
         "day": final_row.record,
-        "history": history_service.list_entries(db, user.id),
+        "history": history_service.list_entries(user.id),
     }

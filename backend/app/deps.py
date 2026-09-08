@@ -4,24 +4,21 @@
 401s carry warm, actionable copy (the frontend surfaces `detail`
 verbatim — Batch 2's throwApiError reads detail.detail).
 
-The User relationship loads `profile` joined (models.py), so
-routers can read user.profile without an extra query.
+Database-free: the user (with its .profile attached) comes from the
+file-backed store (store.py).
 """
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models import User
 from app.security import decode_access_token
+from app.store import User, users_get
 
 _bearer = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
-    db: Session = Depends(get_db),
 ) -> User:
     if credentials is None or not credentials.credentials:
         raise HTTPException(
@@ -34,7 +31,7 @@ async def get_current_user(
             status_code=401,
             detail="Your session expired — reload the page to sign back in.",
         )
-    user = db.get(User, user_id)
+    user = users_get(user_id)
     if user is None:
         raise HTTPException(
             status_code=401,

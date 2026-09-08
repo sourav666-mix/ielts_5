@@ -15,7 +15,7 @@ from fastapi.responses import Response
 
 from app.ai.client import AIError, synthesize_speech, transcribe_audio
 from app.deps import get_current_user
-from app.models import User
+from app.store import User
 
 router = APIRouter(tags=["voice"])
 

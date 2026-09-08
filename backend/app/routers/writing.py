@@ -22,7 +22,7 @@ from app.ai import prompts
 from app.ai import prompts_parallel as pp
 from app.ai.client import AIError, WARM_UNREADABLE, generate_image
 from app.deps import get_current_user
-from app.models import User
+from app.store import User
 
 router = APIRouter(tags=["writing"])
 

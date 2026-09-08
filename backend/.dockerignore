@@ -6,6 +6,9 @@ __pycache__
 *.egg-info
 .env
 .env.*
+atlas_data.json
+atlas_local.db
+
 !.env.example
 .pytest_cache
 .mypy_cache

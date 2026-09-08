@@ -1,9 +1,12 @@
 # ==============================================================
-# ATLAS IELTS Academy — backend image
+# ATLAS IELTS Academy — backend image (NO DATABASE edition)
 # Dev (docker-compose.yml) overlays ./backend as /app and runs
-#   alembic upgrade head && uvicorn --reload
+#   uvicorn --reload
 # so this image's CMD is the PRODUCTION entrypoint; dev just
 # replaces it. Self-contained either way.
+#
+# Persistence = one JSON file (store.py, DATA_FILE env). No DB
+# service, no migrations, no drivers — nothing to configure.
 # ==============================================================
 
 FROM python:3.12-slim
@@ -20,14 +23,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Application code (overlaid by the dev bind mount; canonical here).
 COPY . .
 
-# Non-root runtime. The dev bind mount is only ever read
-# (uvicorn --reload reads; alembic writes nothing).
+# Writable home for the JSON store (store.py writes DATA_FILE here).
+# Baked in, owned by the runtime user — works on any container host.
+RUN mkdir -p /data && chown -R appuser:appuser /data
+ENV DATA_FILE=/data/atlas_data.json
+
+# Non-root runtime. The dev bind mount is only ever read.
 RUN useradd --create-home appuser
 USER appuser
 
 EXPOSE 8000
 
-# JWT_SECRET & friends arrive via environment (compose env_file).
-# Production entrypoint (Render Docker / any container host):
-# migrate FIRST so a fresh database has today's schema, then serve.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# JWT_SECRET arrives via environment (Render dashboard / render.yaml).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

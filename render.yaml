@@ -1,15 +1,16 @@
 # ==============================================================
-# ATLAS IELTS Academy — Render blueprint
+# ATLAS IELTS Academy — Render blueprint (NO DATABASE edition)
 #
 # Deploy the whole stack from the repo root with a Blueprint:
 #   Render Dashboard → New → Blueprint → pick this repo.
-# Or wire the env vars below onto an existing Web Service by hand —
-# they are EXACTLY what the backend image needs at boot (the Dockerfile
-# CMD runs `alembic upgrade head` first, which imports app.config, so
-# DATABASE_URL + JWT_SECRET must exist BEFORE the container starts).
 #
-# ⚠ .env is gitignored and .dockerignore'd — it NEVER reaches Render.
-#   All runtime config must come from these env vars.
+# Persistence is ONE JSON file (store.py) inside the container.
+# ⚠ On ephemeral disks (Render free/starter without a disk) a
+#   REDEPLOY resets progress. To keep data across redeploys,
+#   add a Render Disk and set DATA_FILE=/data/atlas_data.json.
+#
+# ⚠ .env is gitignored and .dockerignore'd — it NEVER reaches
+#   Render. All runtime config comes from these env vars.
 # ==============================================================
 
 services:
@@ -22,10 +23,8 @@ services:
     plan: starter                     # free tier sleeps & kills long AI generations
     autoDeploy: true
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: atlas-db
-          property: connectionString
+      - key: DATA_FILE
+        value: /data/atlas_data.json  # requires a Render Disk (see below)
       - key: JWT_SECRET
         generateValue: true           # Render mints + PERSISTS a strong secret
       - key: OPENROUTER_API_KEY
@@ -36,7 +35,9 @@ services:
         sync: false                   # e.g. https://atlas-ielts.vercel.app
                                       # comma-separated for extra origins
 
-databases:
-  - name: atlas-db
-    databaseName: atlas_ielts
-    plan: basic-256mb                 # `free` exists but expires after 30 days
+# OPTIONAL (paid) — uncomment to persist the JSON store across redeploys:
+#   disks:
+#     - name: atlas-data
+#       diskSizeGB: 1
+#       mountPath: /data
+

@@ -27,7 +27,8 @@ venv/
 .coverage
 htmlcov/
 
-# ── Database ──────────────────────────────────────────────────
+# ── Data store (JSON file — never commit) ─────────────────────
+atlas_data.json
 *.sqlite3
 *.db
 
