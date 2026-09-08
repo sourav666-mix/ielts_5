@@ -15,6 +15,7 @@ Discipline (documented once, honoured everywhere in Batches 10–11):
   but explicit beats implicit in a production build).
 """
 
+import logging
 from collections.abc import Generator
 
 from sqlalchemy import MetaData, create_engine
@@ -66,6 +67,28 @@ if _IS_SQLITE:
     import app.models as _models  # noqa: F401  (registers tables)
 
     Base.metadata.create_all(bind=engine)
+
+
+def _warn_about_local_only_database_url() -> None:
+    """Make the #1 deploy mistake self-explaining in the boot logs.
+
+    The compose/default MySQL URLs (host `mysql` or `localhost`) only
+    resolve inside docker-compose. On a host like Render there is no
+    MySQL, and the deploy used to die with an opaque pymysql traceback.
+    """
+    url = settings.database_url
+    if url.startswith("mysql+pymysql") and ("@localhost" in url or "@mysql:" in url):
+        logging.getLogger("app.database").warning(
+            "DATABASE_URL points at the LOCAL docker-compose MySQL (%s) — that "
+            "database does not exist outside your machine, so migrations will "
+            "fail here. On Render: create a Postgres database, copy its "
+            "'Internal Database URL', and set DATABASE_URL to it. The "
+            "render.yaml blueprint does this automatically.",
+            "localhost" if "@localhost" in url else "mysql (compose service)",
+        )
+
+
+_warn_about_local_only_database_url()
 
 SessionLocal = sessionmaker(
     bind=engine,
