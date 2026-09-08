@@ -28,7 +28,7 @@ import { useToastStore } from '../../store/useToastStore.js';
 import { Stopwatch, hoursSince } from '../../lib/timers.js';
 import { pickCaptureMode, stopAllSpeech } from '../../lib/speech.js';
 import { speakingRoundBand } from '../../lib/scoring.js';
-import { formatBand } from '../../lib/utils.js';
+import { cn, formatBand } from '../../lib/utils.js';
 import {
   generateRound, buildFeedbackPayload, normalizeSpeakingFeedback,
   speakingSignals, finalizeSpeaking, roundAverage,
@@ -40,6 +40,7 @@ import QuestionCard from './QuestionCard.jsx';
 import CueCardStage from './CueCardStage.jsx';
 import RoundSummary from './RoundSummary.jsx';
 import { ErrorState, LoadingHero } from '../ui.jsx';
+import TimerToggle from '../TimerToggle.jsx';
 import VoicePicker from './VoicePicker.jsx';
 import '../../styles/speaking.css';
 import '../../styles/reading.css';   // shared .session-controls (documented)
@@ -71,6 +72,8 @@ export default function SpeakingSession({ phase, target }) {
   const roundRef = useRef(null); roundRef.current = round;
   const swRef = useRef(null);
   const bankedRef = useRef(0);
+  const clockPausedRef = useRef(false);
+  const [clockPaused, setClockPaused] = useState(false);
 
   /* ── Mount: §7.3 re-check → drop any incomplete round (coarse
      resume, §11.3) → stamp the session window. Idempotent. ── */
@@ -109,7 +112,26 @@ export default function SpeakingSession({ phase, target }) {
       setStage('reset');
     }
 
-    if (!final) sw.start();
+    /* A manual pause survives the banking tick — the clock only
+     * restarts here when the student hasn't stopped it. */
+    if (!final && !clockPausedRef.current) sw.start();
+  }
+
+  /* Manual pause/play for the active-practice clock. A deliberate
+   * pause freezes the "x / 90 min" total and survives tab switches. */
+  function toggleClock() {
+    const sw = swRef.current;
+    if (!sw) return;
+    if (clockPausedRef.current) {
+      sw.resume();
+      clockPausedRef.current = false;
+      setClockPaused(false);
+    } else {
+      sw.pauseManually();
+      clockPausedRef.current = true;
+      setClockPaused(true);
+      bankTime();                 // bank what's accrued so far, then stay frozen
+    }
   }
 
   useEffect(() => {
@@ -436,6 +458,8 @@ export default function SpeakingSession({ phase, target }) {
         windowText={windowText}
         topic={round.topic}
         roundNumber={roundNumber}
+        clockPaused={clockPaused}
+        onToggleClock={toggleClock}
       />
       <VoicePicker />
       <RoundSummary
@@ -458,7 +482,7 @@ export default function SpeakingSession({ phase, target }) {
 
 /* ── Slim per-module header (shared classes only) ─────────── */
 
-function SessionHeader({ phase, training, timeSpentSec, windowText, topic, roundNumber }) {
+function SessionHeader({ phase, training, timeSpentSec, windowText, topic, roundNumber, clockPaused, onToggleClock }) {
   return (
     <div className="module-header">
       <div>
@@ -475,9 +499,20 @@ function SessionHeader({ phase, training, timeSpentSec, windowText, topic, round
       <div className="session-controls">
         {windowText && <span className="topbar-pill gold">{windowText}</span>}
         {training && (
-          <span className="mono small" title="Active practice — time away from the tab doesn’t count">
-            {Math.floor(timeSpentSec / 60)} / 90 min
-          </span>
+          <>
+            <TimerToggle
+              paused={clockPaused}
+              onToggle={onToggleClock}
+              title={clockPaused ? 'Resume practice clock' : 'Pause practice clock'}
+            />
+            <span
+              className={clockPaused ? 'mono small paused' : 'mono small'}
+              title="Active practice — time away from the tab doesn’t count"
+              style={clockPaused ? { opacity: 0.7 } : undefined}
+            >
+              {Math.floor(timeSpentSec / 60)} / 90 min{clockPaused ? ' · paused' : ''}
+            </span>
+          </>
         )}
       </div>
     </div>

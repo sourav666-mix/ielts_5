@@ -24,11 +24,18 @@ import PassagePane from './PassagePane.jsx';
 import QuestionMap from './QuestionMap.jsx';
 import QuestionColumn from './QuestionColumn.jsx';
 import Modal from '../Modal.jsx';
+import TimerToggle from '../TimerToggle.jsx';
 import VocabLens from '../VocabLens.jsx';
 import '../../styles/reading.css';
 
 function computeRemaining() {
   const m = useDayStore.getState().record?.reading;
+  /* A manually paused clock resumes exactly where it stopped —
+     the frozen remainder wins over wall-clock arithmetic. */
+  const paused = m?.pausedRemainingSec;
+  if (Number.isFinite(paused) && paused >= 0) {
+    return Math.max(0, Math.min(READING_SECONDS, Math.floor(paused)));
+  }
   const started = m?.timerStartedAt ? Date.parse(m.timerStartedAt) : NaN;
   if (!Number.isFinite(started)) return READING_SECONDS;
   const elapsed = Math.floor((Date.now() - started) / 1000);
@@ -43,11 +50,37 @@ export default function ReadingSession({ phase, onSubmit }) {
   const [tab, setTab] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [xray, setXray] = useState(false);          // Vocab X-Ray mode
+  const [startPaused] = useState(() =>
+    Number.isFinite(useDayStore.getState().record?.reading?.pausedRemainingSec));
+  const [timerPaused, setTimerPaused] = useState(startPaused);
   const [totalSec] = useState(computeRemaining);   // computed ONCE per session
 
-  const { clock, phase: timerPhase } = useCountdown(totalSec, {
-    onExpire: () => onSubmit(true),                // 0:00 → auto-submit, no dialog
-  });
+  const { clock, phase: timerPhase, remainingSec, pause: pauseClock, resume: resumeClock } =
+    useCountdown(totalSec, {
+      autoStart: !startPaused,                     // a paused clock waits for play
+      onExpire: () => onSubmit(true),              // 0:00 → auto-submit, no dialog
+    });
+
+  /* Manual pause/play. Pausing freezes the countdown AND persists the
+     frozen remainder, so leaving and coming back keeps the clock
+     exactly where the student stopped it; resuming re-anchors the
+     wall-clock stamp so the exam-honest arithmetic continues. */
+  function toggleTimer() {
+    const ds = useDayStore.getState();
+    if (!timerPaused) {
+      pauseClock();
+      ds.patchModule('reading', { pausedRemainingSec: Math.max(0, Math.floor(remainingSec)) });
+      setTimerPaused(true);
+    } else {
+      const remaining = Math.max(0, Math.floor(remainingSec));
+      ds.patchModule('reading', {
+        timerStartedAt: new Date(Date.now() - (READING_SECONDS - remaining) * 1000).toISOString(),
+        pausedRemainingSec: null,
+      });
+      resumeClock();
+      setTimerPaused(false);
+    }
+  }
 
   /* Stamp the exam start once (idempotent under StrictMode). */
   useEffect(() => {
@@ -101,7 +134,8 @@ export default function ReadingSession({ phase, onSubmit }) {
               {xray ? 'X-Ray ON' : 'Vocab X-Ray'}
             </button>
           )}
-          <span className={cn('timer', timerPhase)} role="timer" aria-live="off">
+          <TimerToggle paused={timerPaused} onToggle={toggleTimer} />
+          <span className={cn('timer', timerPhase, timerPaused && 'paused')} role="timer" aria-live="off">
             {clock}
           </span>
           <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>
@@ -150,7 +184,7 @@ export default function ReadingSession({ phase, onSubmit }) {
 
       <div className="submit-row">
         <span className="small">
-          Leaving doesn’t stop the clock — the timer keeps running, exactly like the real test.
+          Pause the clock whenever you need a break — leaving the page doesn’t stop it, exactly like the real test.
         </span>
         <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>
           Submit Reading Test

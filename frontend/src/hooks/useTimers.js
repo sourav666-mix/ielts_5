@@ -17,6 +17,7 @@ import { Countdown, Stopwatch, formatClock } from '../lib/timers.js';
 export function useCountdown(totalSec, { autoStart = true, warnAt = 300, dangerAt = 60, onExpire } = {}) {
   const [remaining, setRemaining] = useState(() => Math.max(0, Math.floor(totalSec)));
   const [phase, setPhase] = useState('');
+  const [running, setRunning] = useState(autoStart);
   const cdRef = useRef(null);
 
   /* Keep the latest onExpire without recreating the timer. */
@@ -45,10 +46,11 @@ export function useCountdown(totalSec, { autoStart = true, warnAt = 300, dangerA
     remainingSec: remaining,
     phase,
     clock: formatClock(remaining),
-    start: () => cdRef.current?.start(),
-    pause: () => cdRef.current?.pause(),
-    resume: () => cdRef.current?.resume(),
-    stop: () => cdRef.current?.stop(),
+    running,
+    start: () => { cdRef.current?.start(); setRunning(true); },
+    pause: () => { cdRef.current?.pause(); setRunning(false); },
+    resume: () => { cdRef.current?.resume(); setRunning(true); },
+    stop: () => { cdRef.current?.stop(); setRunning(false); },
   };
 }
 

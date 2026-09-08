@@ -22,12 +22,13 @@ import {
   TASK1_MIN, TASK1_TARGET, TASK2_MIN, TASK2_TARGET,
   VISUAL_LABELS, ESSAY_LABELS,
 } from '../../lib/writingFlow.js';
-import { countWords } from '../../lib/utils.js';
+import { countWords, cn } from '../../lib/utils.js';
 import { ACADEMIC_VOCAB, itemsInText, normalizeItems } from '../../lib/vocabXray.js';
 import Task1Visual, { TaskPrompt } from './Task1Visual.jsx';
 import TaskAnswerInput from './TaskAnswerInput.jsx';
 import ModelAnswerBlock from './ModelAnswerBlock.jsx';
 import Modal from '../Modal.jsx';
+import TimerToggle from '../TimerToggle.jsx';
 import VocabXRayText from '../VocabXRayText.jsx';
 import VocabLens from '../VocabLens.jsx';
 import '../../styles/writing.css';
@@ -71,9 +72,14 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
    * Covers submit (view swaps to the grading screen → unmount),
    * navigating away mid-draft, and grading failure alike; the
    * view's submit deliberately never adds time. StrictMode's
-   * probe cleanup adds ~0s and is guarded. */
+   * probe cleanup adds ~0s and is guarded. The stopwatch lives
+   * in a ref so the manual pause/play button can drive it too. */
+  const swRef = useRef(null);
+  const [timerPaused, setTimerPaused] = useState(false);
+
   useEffect(() => {
     const sw = new Stopwatch();
+    swRef.current = sw;
     sw.start();                                  // auto-pauses on tab-hide
     const iv = setInterval(() => setElapsed(sw.elapsedSec()), 1000);
     return () => {
@@ -83,6 +89,20 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
       if (sec > 0) useDayStore.getState().addTimeSpent('writing', sec);
     };
   }, []);
+
+  /* Manual pause/play — a deliberate break stops the "spent" clock
+     and stays frozen even if the tab is hidden and shown again. */
+  function toggleTimer() {
+    const sw = swRef.current;
+    if (!sw) return;
+    if (timerPaused) {
+      sw.resume();
+      setTimerPaused(false);
+    } else {
+      sw.pauseManually();
+      setTimerPaused(true);
+    }
+  }
 
   if (!content) return null;
 
@@ -127,8 +147,9 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
               {xray ? 'X-Ray ON' : 'Vocab X-Ray'}
             </button>
           )}
-          <span className="session-clock" role="timer" aria-live="off">
-            <b>{formatClock(elapsed)}</b> spent
+          <TimerToggle paused={timerPaused} onToggle={toggleTimer} />
+          <span className={timerPaused ? 'session-clock paused' : 'session-clock'} role="timer" aria-live="off">
+            <b>{formatClock(elapsed)}</b> {timerPaused ? 'paused' : 'spent'}
           </span>
           <button
             type="button"

@@ -27,11 +27,18 @@ import AudioPane from './AudioPane.jsx';
 import MapPlan from './MapPlan.jsx';
 import QuestionColumn from './QuestionColumn.jsx';
 import Modal from '../Modal.jsx';
+import TimerToggle from '../TimerToggle.jsx';
 import '../../styles/listening.css';
 import '../../styles/reading.css';   // shared .session-controls (documented)
 
 function computeRemaining() {
   const m = useDayStore.getState().record?.listening;
+  /* A manually paused clock resumes exactly where it stopped —
+     the frozen remainder wins over wall-clock arithmetic. */
+  const paused = m?.pausedRemainingSec;
+  if (Number.isFinite(paused) && paused >= 0) {
+    return Math.max(0, Math.min(LISTENING_SECONDS, Math.floor(paused)));
+  }
   const started = m?.timerStartedAt ? Date.parse(m.timerStartedAt) : NaN;
   if (!Number.isFinite(started)) return LISTENING_SECONDS;
   const elapsed = Math.floor((Date.now() - started) / 1000);
@@ -50,14 +57,40 @@ export default function ListeningSession({ phase, onSubmit }) {
   const [totalSec] = useState(computeRemaining);          // computed ONCE per session
   const [playState, setPlayState] = useState(null);       // { part, status }
   const [playback, setPlayback] = useState(null);         // { lineIdx, total, speaker }
+  const [startPaused] = useState(() =>
+    Number.isFinite(useDayStore.getState().record?.listening?.pausedRemainingSec));
+  const [timerPaused, setTimerPaused] = useState(startPaused);
 
   const playerRef = useRef(null);
 
   const maxPlays = phase === 'mock' ? 1 : 2;              // §5.1 + §2.2
 
-  const { clock, phase: timerPhase } = useCountdown(totalSec, {
-    onExpire: () => handleSubmit(true),                   // 0:00 → auto-submit, no dialog
-  });
+  const { clock, phase: timerPhase, remainingSec, pause: pauseClock, resume: resumeClock } =
+    useCountdown(totalSec, {
+      autoStart: !startPaused,                            // a paused clock waits for play
+      onExpire: () => handleSubmit(true),                 // 0:00 → auto-submit, no dialog
+    });
+
+  /* Manual pause/play — same resume-safe persistence as Reading:
+     the frozen remainder is stored, and resuming re-anchors the
+     wall-clock stamp so the arithmetic continues from there. */
+  function toggleTimer() {
+    const ds = useDayStore.getState();
+    if (!timerPaused) {
+      pauseClock();
+      ds.patchModule('listening', { pausedRemainingSec: Math.max(0, Math.floor(remainingSec)) });
+      setTimerPaused(true);
+      stopPlayback();                                     // no audio while the clock sleeps
+    } else {
+      const remaining = Math.max(0, Math.floor(remainingSec));
+      ds.patchModule('listening', {
+        timerStartedAt: new Date(Date.now() - (LISTENING_SECONDS - remaining) * 1000).toISOString(),
+        pausedRemainingSec: null,
+      });
+      resumeClock();
+      setTimerPaused(false);
+    }
+  }
 
   /* Stamp the exam start once (idempotent under StrictMode). */
   useEffect(() => {
@@ -157,7 +190,8 @@ export default function ListeningSession({ phase, onSubmit }) {
           </p>
         </div>
         <div className="session-controls">
-          <span className={cn('timer', timerPhase)} role="timer" aria-live="off">
+          <TimerToggle paused={timerPaused} onToggle={toggleTimer} />
+          <span className={cn('timer', timerPhase, timerPaused && 'paused')} role="timer" aria-live="off">
             {clock}
           </span>
           <button type="button" className="btn btn-primary" onClick={() => setConfirming(true)}>

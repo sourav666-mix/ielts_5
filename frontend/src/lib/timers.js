@@ -101,15 +101,15 @@ export class Stopwatch {
     this._startedAt = null;
     this._onVisible = () => {
       if (document.hidden) this.pause();
-      else if (this._autoResume) this.start();
+      else if (this.resumeOnVisible) this.start();
     };
-    this._autoResume = false;
+    this.resumeOnVisible = false;   // manual pause survives tab visibility changes
   }
 
   start() {
     if (this._startedAt != null) return;
     this._startedAt = Date.now();
-    this._autoResume = true;
+    this.resumeOnVisible = true;
     document.addEventListener('visibilitychange', this._onVisible);
   }
 
@@ -119,6 +119,15 @@ export class Stopwatch {
     this._startedAt = null;
   }
 
+  /** A deliberate student pause — the clock stays frozen even when
+   *  the tab is hidden and shown again (until resume() is called). */
+  pauseManually() {
+    this.resumeOnVisible = false;
+    this.pause();
+  }
+
+  resume() { this.start(); }
+
   elapsedSec() {
     const live = this._startedAt != null ? Date.now() - this._startedAt : 0;
     return Math.floor((this._accumMs + live) / 1000);
@@ -126,7 +135,7 @@ export class Stopwatch {
 
   destroy() {
     this.pause();
-    this._autoResume = false;
+    this.resumeOnVisible = false;
     document.removeEventListener('visibilitychange', this._onVisible);
   }
 }
