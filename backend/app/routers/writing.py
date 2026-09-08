@@ -11,6 +11,7 @@ The transcription rides back as `extractedText` for the results view
 The frontend hides the button too, but the server is the rule.
 """
 
+import asyncio
 import base64
 import json
 
@@ -18,6 +19,7 @@ from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadF
 
 from app.ai import Task, chat_json_with_fallback
 from app.ai import prompts
+from app.ai import prompts_parallel as pp
 from app.ai.client import AIError, WARM_UNREADABLE, generate_image
 from app.deps import get_current_user
 from app.models import User
@@ -43,9 +45,35 @@ async def writing_generate(
     payload: dict = Body(...),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """§6.2/§6.3 — Task 1 (visual + chartData) + Task 2 (essay type)."""
-    messages = prompts.writing_generation_messages(payload)
-    return _require_dict(await chat_json_with_fallback(Task.WRITING_GEN, messages))
+    """§6.2/§6.3 — Task 1 (visual + chartData) + Task 2 (essay type).
+
+    Parallel form: a tiny theme/angles call keeps the pair coherent,
+    then the two task calls race concurrently and are stitched into
+    the exact shape the single-call prompt produced.
+    """
+    theme_data = _require_dict(
+        await chat_json_with_fallback(
+            Task.WRITING_GEN, pp.writing_theme_messages(payload), max_tokens=300,
+        )
+    )
+    theme = str(theme_data.get("theme") or "").strip() or "Today’s writing"
+    idea1 = str(theme_data.get("task1Idea") or "").strip() or theme
+    idea2 = str(theme_data.get("task2Idea") or "").strip() or theme
+
+    async def one_task(task_number: int) -> dict:
+        messages = (
+            pp.writing_task1_messages(payload, theme=theme, idea=idea1)
+            if task_number == 1
+            else pp.writing_task2_messages(payload, theme=theme, idea=idea2)
+        )
+        data = _require_dict(await chat_json_with_fallback(Task.WRITING_GEN, messages))
+        task = data.get(f"task{task_number}")
+        if not isinstance(task, dict) or not str(task.get("prompt") or "").strip():
+            raise AIError(WARM_UNREADABLE, 502)
+        return task
+
+    task1, task2 = await asyncio.gather(one_task(1), one_task(2))
+    return {"theme": theme, "task1": task1, "task2": task2}
 
 
 # ── /writing/grade — multipart, vision two-step (§6.4/§6.5) ────
@@ -122,25 +150,38 @@ async def writing_grade(
     if not isinstance(task1_data, dict) or not isinstance(task2_data, dict):
         raise AIError("The task details didn't parse — refresh the page and try again.", 400)
 
-    # Step 1 — vision transcription of any uploads (§12.3 two-step)
-    t1_text, t1_flag, t1_extracted, t1_words = await _resolve_text(task1File, "Task 1", task1Text)
-    t2_text, t2_flag, t2_extracted, t2_words = await _resolve_text(task2File, "Task 2", task2Text)
-
-    # Step 2 — grade (transcriptions flagged so the prompt grades the real work)
-    messages = prompts.writing_grading_messages(
-        task1=task1_data,
-        task2=task2_data,
-        task1_text=t1_text,
-        task2_text=t2_text,
-        task1_transcribed=t1_flag,
-        task2_transcribed=t2_flag,
-        target_band=_target_band(user),
+    # Step 1 — vision transcription of any uploads (§12.3 two-step).
+    # Both transcriptions run CONCURRENTLY — they're independent.
+    (t1_text, t1_flag, t1_extracted, t1_words), (t2_text, t2_flag, t2_extracted, t2_words) = (
+        await asyncio.gather(
+            _resolve_text(task1File, "Task 1", task1Text),
+            _resolve_text(task2File, "Task 2", task2Text),
+        )
     )
-    graded = _require_dict(await chat_json_with_fallback(Task.WRITING_GRADE, messages))
 
-    for key in ("task1", "task2"):
-        if not isinstance(graded.get(key), dict):
+    # Step 2 — grade BOTH tasks concurrently (one examiner call per
+    # task; output tokens dominate latency, so two small parallel
+    # marks come back far faster than one giant combined mark).
+    target = _target_band(user)
+
+    async def grade_one(task_number: int, task_data: dict, task_text: str, transcribed: bool) -> dict:
+        messages = pp.writing_grade_task_messages(
+            task_number=task_number,
+            task_data=task_data,
+            task_text=task_text,
+            transcribed=transcribed,
+            target_band=target,
+        )
+        marked = _require_dict(await chat_json_with_fallback(Task.WRITING_GRADE, messages))
+        if not isinstance(marked.get("criteria"), dict) or not marked.get("criteria"):
             raise AIError(WARM_UNREADABLE, 502)
+        return marked
+
+    marked1, marked2 = await asyncio.gather(
+        grade_one(1, task1_data, t1_text, t1_flag),
+        grade_one(2, task2_data, t2_text, t2_flag),
+    )
+    graded = {"task1": marked1, "task2": marked2}
 
     # Attach the vision layer's results for the frontend (File 63 reads both).
     if t1_extracted is not None:

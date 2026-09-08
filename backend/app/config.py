@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     model_writing_vision: str = "qwen/qwen3.8-flash"
     model_speaking_gen: str = "deepseek/deepseek-v4-flash"
     model_speaking_feedback: str = "openai/gpt-5.6-luna"
-    model_fallback: str = "google/gemini-3.6-flash:batch"
+    model_fallback: str = "google/gemini-3.6-flash"
 
     # ── Voice (spec §13 — Kokoro-82M only, one provider) ──────
     tts_model: str = "hexgrad/kokoro-82m"
