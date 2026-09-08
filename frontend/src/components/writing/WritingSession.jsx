@@ -13,21 +13,26 @@
    did via the unmount cleanup, a single accounting owner).
    ============================================================ */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { phaseLabel } from '../../lib/moduleMeta.js';
 import { useDayStore } from '../../store/useDayStore.js';
+import { useProfileStore } from '../../store/useProfileStore.js';
 import { Stopwatch, formatClock } from '../../lib/timers.js';
 import {
   TASK1_MIN, TASK1_TARGET, TASK2_MIN, TASK2_TARGET,
   VISUAL_LABELS, ESSAY_LABELS,
 } from '../../lib/writingFlow.js';
 import { countWords } from '../../lib/utils.js';
+import { ACADEMIC_VOCAB, itemsInText, normalizeItems } from '../../lib/vocabXray.js';
 import Task1Visual, { TaskPrompt } from './Task1Visual.jsx';
 import TaskAnswerInput from './TaskAnswerInput.jsx';
 import ModelAnswerBlock from './ModelAnswerBlock.jsx';
 import Modal from '../Modal.jsx';
+import VocabXRayText from '../VocabXRayText.jsx';
+import VocabLens from '../VocabLens.jsx';
 import '../../styles/writing.css';
 import '../../styles/reading.css';   // shared .session-controls / .submit-row (documented)
+
 
 const fileWord = (file) => (String(file?.type || '').startsWith('image/') ? 'photo' : 'PDF');
 
@@ -40,6 +45,27 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
 
   const [elapsed, setElapsed] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  const [xray, setXray] = useState(false);          // Vocab X-Ray mode
+
+  /* Vocab X-Ray word list for Writing: the built-in academic
+     dictionary merged with the student's own SRS deck (words they
+     collected from Reading) — deduped by normalizeItems. */
+  const writingVocab = useMemo(() => {
+    const deck = useProfileStore.getState().profile?.vocabDeck || [];
+    return normalizeItems([...ACADEMIC_VOCAB, ...deck]);
+  }, []);
+
+  /* Only terms that actually appear in today's prompts and model
+     answers are listed in the lens. */
+  const lensItems = useMemo(() => {
+    const all = [
+      content?.task1?.prompt,
+      content?.task2?.prompt,
+      t1?.modelAnswer,
+      t2?.modelAnswer,
+    ].join('\n\n');
+    return itemsInText(writingVocab, all);
+  }, [writingVocab, content, t1?.modelAnswer, t2?.modelAnswer]);
 
   /* Active-time accounting: ONE owner — this unmount cleanup.
    * Covers submit (view swaps to the grading screen → unmount),
@@ -85,6 +111,22 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
           </p>
         </div>
         <div className="session-controls">
+          {!isMock && (
+            <button
+              type="button"
+              className={xray ? 'vx-toggle on' : 'vx-toggle'}
+              onClick={() => setXray((v) => !v)}
+              aria-pressed={xray}
+              title="Vocab X-Ray — light up academic vocabulary and phrases in the prompts and model answers"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.5" y2="16.5" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+              {xray ? 'X-Ray ON' : 'Vocab X-Ray'}
+            </button>
+          )}
           <span className="session-clock" role="timer" aria-live="off">
             <b>{formatClock(elapsed)}</b> spent
           </span>
@@ -122,7 +164,11 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
           </p>
         </div>
 
-        <Task1Visual task1={content.task1} />
+        <Task1Visual
+          task1={content.task1}
+          xray={xray && !isMock}
+          vocab={writingVocab}
+        />
 
         <TaskAnswerInput
           taskKey="task1"
@@ -140,6 +186,8 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
             modelAnswer={t1?.modelAnswer}
             busy={modelBusy === 'task1'}
             onGenerate={() => onModelAnswer?.('task1')}
+            xray={xray}
+            vocab={writingVocab}
           />
         )}
       </section>
@@ -154,7 +202,13 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
           </p>
         </div>
 
-        <TaskPrompt>{content.task2.prompt}</TaskPrompt>
+        {xray && !isMock ? (
+          <p className="task-prompt">
+            <VocabXRayText text={content.task2.prompt} vocab={writingVocab} inline />
+          </p>
+        ) : (
+          <TaskPrompt>{content.task2.prompt}</TaskPrompt>
+        )}
 
         <TaskAnswerInput
           taskKey="task2"
@@ -172,9 +226,21 @@ export default function WritingSession({ phase, onSubmit, onModelAnswer, modelBu
             modelAnswer={t2?.modelAnswer}
             busy={modelBusy === 'task2'}
             onGenerate={() => onModelAnswer?.('task2')}
+            xray={xray}
+            vocab={writingVocab}
           />
         )}
       </section>
+
+      {xray && !isMock && (
+        <VocabLens
+          open
+          items={lensItems}
+          onClose={() => setXray(false)}
+          title="Writing Vocab Lens"
+          subtitle={`${lensItems.length} academic ${lensItems.length === 1 ? 'term' : 'terms'} detected`}
+        />
+      )}
 
       <div className="submit-row">
         <span className="small">

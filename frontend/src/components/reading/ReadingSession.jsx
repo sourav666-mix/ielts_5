@@ -24,6 +24,7 @@ import PassagePane from './PassagePane.jsx';
 import QuestionMap from './QuestionMap.jsx';
 import QuestionColumn from './QuestionColumn.jsx';
 import Modal from '../Modal.jsx';
+import VocabLens from '../VocabLens.jsx';
 import '../../styles/reading.css';
 
 function computeRemaining() {
@@ -41,6 +42,7 @@ export default function ReadingSession({ phase, onSubmit }) {
 
   const [tab, setTab] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  const [xray, setXray] = useState(false);          // Vocab X-Ray mode
   const [totalSec] = useState(computeRemaining);   // computed ONCE per session
 
   const { clock, phase: timerPhase } = useCountdown(totalSec, {
@@ -59,6 +61,7 @@ export default function ReadingSession({ phase, onSubmit }) {
 
   if (!content) return null;
 
+  const isMock = phase === 'mock';
   const passages = content.passages || [];
   const questions = content.questions || [];
   const answeredCount = questions.filter((q) => {
@@ -82,6 +85,22 @@ export default function ReadingSession({ phase, onSubmit }) {
           </p>
         </div>
         <div className="session-controls">
+          {!isMock && (
+            <button
+              type="button"
+              className={cn('vx-toggle', xray && 'on')}
+              onClick={() => setXray((v) => !v)}
+              aria-pressed={xray}
+              title="Vocab X-Ray — light up every key word and phrase with instant meanings"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.5" y2="16.5" />
+                <line x1="8" y1="11" x2="14" y2="11" />
+              </svg>
+              {xray ? 'X-Ray ON' : 'Vocab X-Ray'}
+            </button>
+          )}
           <span className={cn('timer', timerPhase)} role="timer" aria-live="off">
             {clock}
           </span>
@@ -114,9 +133,20 @@ export default function ReadingSession({ phase, onSubmit }) {
           index={tab}
           phase={phase}
           questionRange={rangeForPassage(content, tab)}
+          xray={xray && !isMock}
         />
         <QuestionColumn content={content} passageIndex={tab} answers={answers} onAnswer={onAnswer} />
       </div>
+
+      {xray && !isMock && (
+        <VocabLens
+          open
+          items={passages[tab]?.vocab || []}
+          onClose={() => setXray(false)}
+          title="Reading Vocab Lens"
+          subtitle={`Passage ${tab + 1} · ${((passages[tab]?.vocab) || []).length} terms detected`}
+        />
+      )}
 
       <div className="submit-row">
         <span className="small">

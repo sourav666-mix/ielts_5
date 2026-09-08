@@ -10,19 +10,24 @@
 
 import React from 'react';
 import { countWords } from '../../lib/utils.js';
+import VocabXRayText from '../VocabXRayText.jsx';
 import '../../styles/writing.css';
 
 const splitParagraphs = (t) => String(t || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
-export default function ModelAnswerBlock({ modelAnswer, busy, onGenerate }) {
+export default function ModelAnswerBlock({ modelAnswer, busy, onGenerate, xray = false, vocab = [] }) {
   if (modelAnswer) {
     const words = countWords(modelAnswer);
     return (
       <div className="stack-t">
         <p className="kicker">A Band 9 model answer — for comparison</p>
-        <div className="paper paper-raised">
-          {splitParagraphs(modelAnswer).map((p, i) => <p key={i}>{p}</p>)}
-        </div>
+        {xray ? (
+          <VocabXRayText text={modelAnswer} vocab={vocab} bodyClass="paper paper-raised" />
+        ) : (
+          <div className="paper paper-raised">
+            {splitParagraphs(modelAnswer).map((p, i) => <p key={i}>{p}</p>)}
+          </div>
+        )}
         <p className="model-note">
           <span className="model-words">{words} words</span> — the right length for this task.
           Compare it line by line with yours: the interesting question is always what it chose

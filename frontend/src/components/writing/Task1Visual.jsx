@@ -17,6 +17,7 @@ import React, { useEffect, useState } from 'react';
 import { LineGraphVisual, MixedChartVisual, PieChartVisual, TableVisual } from './ChartVisuals.jsx';
 import { ProcessDiagramVisual, MapDiagramVisual } from './DiagramVisuals.jsx';
 import { fetchTaskImage } from '../../lib/writingFlow.js';
+import VocabXRayText from '../VocabXRayText.jsx';
 import '../../styles/writing.css';
 
 const IMAGE_TYPES = new Set(['process_diagram', 'map']);
@@ -26,7 +27,19 @@ export function TaskPrompt({ children }) {
   return <p className="task-prompt">{children}</p>;
 }
 
-const Task1Visual = React.memo(function Task1Visual({ task1 }) {
+/** Task 1 prompt with optional Vocab X-Ray highlighting. */
+export function Task1Prompt({ prompt, xray = false, vocab = [] }) {
+  if (xray) {
+    return (
+      <p className="task-prompt">
+        <VocabXRayText text={prompt} vocab={vocab} inline />
+      </p>
+    );
+  }
+  return <TaskPrompt>{prompt}</TaskPrompt>;
+}
+
+const Task1Visual = React.memo(function Task1Visual({ task1, xray = false, vocab = [] }) {
   const [image, setImage] = useState(task1?.image || '');
   const [imageLoading, setImageLoading] = useState(false);
 
@@ -56,7 +69,7 @@ const Task1Visual = React.memo(function Task1Visual({ task1 }) {
 
   return (
     <article className="stack-t" aria-label="Task 1">
-      <TaskPrompt>{task1.prompt}</TaskPrompt>
+      <Task1Prompt prompt={task1.prompt} xray={xray} vocab={vocab} />
       <div className="chart-frame">
         {cd?.title && <p className="chart-title">{cd.title}</p>}
         {task1.visualType === 'line_graph' && <LineGraphVisual chartData={cd} />}

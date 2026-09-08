@@ -11,12 +11,14 @@
 
 import React from 'react';
 import VocabText from '../VocabText.jsx';
+import VocabXRayText from '../VocabXRayText.jsx';
 import '../../styles/reading.css';
 
-export default function PassagePane({ passage, index, phase, questionRange }) {
+export default function PassagePane({ passage, index, phase, questionRange, xray = false }) {
   if (!passage) return null;
   const vocabCount = (passage.vocab || []).length;
   const isMock = phase === 'mock';
+  const Text = xray && !isMock ? VocabXRayText : VocabText;
 
   return (
     <article className="stack-t" aria-label={`Passage ${index + 1}`}>
@@ -27,12 +29,14 @@ export default function PassagePane({ passage, index, phase, questionRange }) {
         <h2 className="title-3">{passage.title}</h2>
         {!isMock && vocabCount > 0 && (
           <p className="small">
-            {vocabCount} {vocabCount === 1 ? 'word is' : 'words are'} highlighted — tap one for its meaning.
+            {xray
+              ? 'X-Ray engaged — every occurrence is lit up; tap any word or phrase for its meaning.'
+              : `${vocabCount} ${vocabCount === 1 ? 'word is' : 'words are'} highlighted — tap one for its meaning.`}
           </p>
         )}
       </div>
       <div className="passage-lettered">
-        <VocabText text={passage.text} vocab={passage.vocab} disabled={isMock} />
+        <Text text={passage.text} vocab={passage.vocab} disabled={isMock} />
       </div>
     </article>
   );

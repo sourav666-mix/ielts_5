@@ -1,0 +1,402 @@
+/* ============================================================
+   ATLAS IELTS ACADEMY — VOCAB X-RAY
+   Holographic 3D vocabulary highlighting for Reading & Writing.
+
+   Design language: the app's ink-navy + brass palette extended
+   with a single "hologram" teal accent used ONLY here, so the
+   X-Ray feels like a deliberate mode — like switching on a
+   scanner over the parchment.
+
+   Contents
+   1. Toggle button (holographic, 3D press)
+   2. Highlights (all occurrences, staggered materialise)
+   3. Popover (floating glass card, simple meaning + example)
+   4. Vocab Lens dock (PC right panel / mobile bottom sheet)
+   5. Responsive & reduced-motion
+   ============================================================ */
+
+/* ── 1. Toggle button ──────────────────────────────────────── */
+
+.vx-toggle {
+  --vx-teal: 79, 209, 197;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(var(--vx-teal), 0.35);
+  background: linear-gradient(160deg, rgba(var(--vx-teal), 0.10), rgba(200, 155, 60, 0.08));
+  color: #9BE8E0;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition:
+    transform var(--t-fast),
+    box-shadow var(--t-fast),
+    border-color var(--t-fast),
+    background var(--t-fast),
+    color var(--t-fast);
+  white-space: nowrap;
+}
+.vx-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--vx-teal), 0.6);
+  box-shadow: 0 6px 18px rgba(var(--vx-teal), 0.22);
+  color: #CFF7F2;
+}
+.vx-toggle:active { transform: translateY(1px) scale(0.98); }
+.vx-toggle.on {
+  border-color: rgba(var(--vx-teal), 0.85);
+  background: linear-gradient(160deg, rgba(var(--vx-teal), 0.24), rgba(200, 155, 60, 0.14));
+  color: #DFFBF7;
+  box-shadow:
+    0 0 16px rgba(var(--vx-teal), 0.35),
+    inset 0 0 12px rgba(var(--vx-teal), 0.14);
+  animation: vx-toggle-pulse 2.4s ease-in-out infinite;
+}
+@keyframes vx-toggle-pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(var(--vx-teal), 0.30), inset 0 0 10px rgba(var(--vx-teal), 0.12); }
+  50%      { box-shadow: 0 0 22px rgba(var(--vx-teal), 0.45), inset 0 0 14px rgba(var(--vx-teal), 0.18); }
+}
+.vx-toggle svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  filter: drop-shadow(0 0 4px rgba(var(--vx-teal), 0.6));
+}
+
+/* ── 2. Highlights ─────────────────────────────────────────── */
+
+.vx-root { position: relative; }
+
+.vx-hl {
+  --vx-teal: 79, 209, 197;
+  display: inline-block;
+  padding: 0 2px;
+  margin: 0 -1px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: inherit;
+  background: linear-gradient(180deg, rgba(var(--vx-teal), 0.14), rgba(200, 155, 60, 0.16));
+  border-bottom: 2px solid rgba(var(--vx-teal), 0.55);
+  transition:
+    transform var(--t-fast),
+    box-shadow var(--t-fast),
+    background var(--t-fast),
+    border-color var(--t-fast);
+  transform: translateZ(0);
+}
+/* Staggered "materialise" when the X-Ray engages */
+.vx-scanning .vx-hl {
+  animation: vx-materialise 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--vx-i, 0) * 45ms);
+}
+@keyframes vx-materialise {
+  from { opacity: 0; transform: translateY(4px) scale(0.88); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.vx-hl:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: linear-gradient(180deg, rgba(var(--vx-teal), 0.26), rgba(200, 155, 60, 0.22));
+  border-bottom-color: rgba(var(--vx-teal), 0.9);
+  box-shadow: 0 6px 14px rgba(var(--vx-teal), 0.30);
+  z-index: 2;
+}
+.vx-hl:focus-visible { outline: 2px solid rgba(var(--vx-teal), 0.8); outline-offset: 2px; }
+.vx-hl.open {
+  background: linear-gradient(180deg, rgba(var(--vx-teal), 0.30), rgba(200, 155, 60, 0.26));
+  border-bottom-color: rgba(var(--vx-teal), 1);
+  box-shadow: 0 0 0 3px rgba(var(--vx-teal), 0.18), 0 8px 18px rgba(var(--vx-teal), 0.28);
+  transform: translateY(-2px) scale(1.04);
+}
+
+/* ── 3. Popover — floating glass card ──────────────────────── */
+
+.vx-pop {
+  --vx-teal: 79, 209, 197;
+  position: fixed;
+  z-index: 90;
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  background: linear-gradient(165deg, rgba(19, 31, 51, 0.92), rgba(11, 18, 28, 0.96));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(var(--vx-teal), 0.35);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(var(--vx-teal), 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  animation: vx-pop-in 0.24s cubic-bezier(0.2, 0.6, 0.2, 1);
+  transform-origin: top center;
+  pointer-events: auto;
+}
+@keyframes vx-pop-in {
+  from { opacity: 0; transform: perspective(700px) rotateX(6deg) translateY(-6px) scale(0.96); }
+  to   { opacity: 1; transform: perspective(700px) rotateX(0deg) translateY(0) scale(1); }
+}
+.vx-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(var(--vx-teal), 0.18);
+}
+/* Tiny scanner line sweeping the header — the "machine reading" cue */
+.vx-pop-scan {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--vx-teal), 0.5);
+  background:
+    linear-gradient(rgba(var(--vx-teal), 0.35), rgba(var(--vx-teal), 0.35)) center /
+    100% 2px no-repeat,
+    rgba(var(--vx-teal), 0.08);
+  animation: vx-scan 1.6s ease-in-out infinite;
+}
+@keyframes vx-scan {
+  0%, 100% { background-position: center 20%, center; }
+  50%      { background-position: center 80%, center; }
+}
+.vx-pop-word {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: #DFFBF7;
+  text-shadow: 0 0 12px rgba(var(--vx-teal), 0.35);
+}
+.vx-pop-block { margin-bottom: 10px; }
+.vx-pop-block:last-child { margin-bottom: 0; }
+.vx-pop-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(var(--vx-teal), 0.8);
+  margin-bottom: 3px;
+}
+.vx-pop-def { font-size: 14px; line-height: 1.5; color: var(--text); }
+.vx-pop-example {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #B9C4D4;
+  border-left: 2px solid rgba(200, 155, 60, 0.5);
+  padding-left: 10px;
+}
+.vx-pop-related { font-size: 12px; color: var(--text-dim); }
+.vx-pop-related strong { color: #E3BC63; }
+
+/* ── 4. Vocab Lens dock ────────────────────────────────────── */
+
+.vx-lens-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 68;
+  background: rgba(5, 9, 15, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: vx-fade 0.25s ease both;
+}
+@keyframes vx-fade { from { opacity: 0; } }
+
+.vx-lens {
+  --vx-teal: 79, 209, 197;
+  position: fixed;
+  top: calc(var(--topbar-h, 56px) + 12px);
+  right: 12px;
+  bottom: 12px;
+  width: min(380px, calc(100vw - 24px));
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background: linear-gradient(170deg, rgba(19, 31, 51, 0.88), rgba(11, 18, 28, 0.95));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(var(--vx-teal), 0.28);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(var(--vx-teal), 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  animation: vx-lens-in var(--t-view) cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+@keyframes vx-lens-in {
+  from { opacity: 0; transform: perspective(900px) rotateY(-8deg) translateX(40px); }
+  to   { opacity: 1; transform: perspective(900px) rotateY(0deg) translateX(0); }
+}
+
+.vx-lens-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(var(--vx-teal), 0.18);
+}
+.vx-lens-title { display: flex; align-items: center; gap: 12px; }
+.vx-lens-core {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #DFFBF7, rgba(var(--vx-teal), 0.85) 55%, rgba(var(--vx-teal), 0.25));
+  box-shadow: 0 0 14px rgba(var(--vx-teal), 0.65);
+  animation: vx-core 2.6s ease-in-out infinite;
+}
+@keyframes vx-core {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(var(--vx-teal), 0.5); }
+  50%      { transform: scale(1.15); box-shadow: 0 0 20px rgba(var(--vx-teal), 0.85); }
+}
+.vx-lens-title h3 {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #DFFBF7;
+}
+.vx-lens-title p {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.vx-lens-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(var(--vx-teal), 0.3);
+  background: rgba(var(--vx-teal), 0.08);
+  color: #9BE8E0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+.vx-lens-close:hover {
+  background: rgba(var(--vx-teal), 0.2);
+  border-color: rgba(var(--vx-teal), 0.6);
+  color: #DFFBF7;
+}
+
+.vx-lens-search { padding: 10px 16px; border-bottom: 1px solid rgba(var(--vx-teal), 0.12); }
+.vx-lens-search input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--ink-700);
+  background: rgba(11, 18, 28, 0.6);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+.vx-lens-search input::placeholder { color: var(--text-dim); }
+.vx-lens-search input:focus {
+  outline: none;
+  border-color: rgba(var(--vx-teal), 0.6);
+  box-shadow: 0 0 0 3px rgba(var(--vx-teal), 0.12);
+}
+
+.vx-lens-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.vx-lens-empty {
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.vx-card {
+  border: 1px solid rgba(var(--vx-teal), 0.16);
+  border-left: 3px solid rgba(200, 155, 60, 0.55);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  background: linear-gradient(160deg, rgba(22, 37, 61, 0.65), rgba(16, 25, 42, 0.75));
+  transform-style: preserve-3d;
+  transition:
+    transform var(--t-fast),
+    border-color var(--t-fast),
+    box-shadow var(--t-fast);
+  animation: vx-card-in 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--vx-i, 0) * 40ms);
+}
+@keyframes vx-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.vx-card:hover {
+  transform: perspective(700px) rotateX(2deg) translateY(-2px);
+  border-color: rgba(var(--vx-teal), 0.45);
+  border-left-color: rgba(200, 155, 60, 0.9);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(var(--vx-teal), 0.12);
+}
+.vx-card-word {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #E3BC63;
+}
+.vx-card-def { margin: 0 0 6px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.vx-card-ex {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #B9C4D4;
+}
+.vx-card-rel { margin: 0; font-size: 11px; color: var(--text-dim); }
+.vx-card-rel strong { color: #9BE8E0; font-weight: 600; }
+
+/* ── 5. Responsive & reduced motion ────────────────────────── */
+
+@media (max-width: 860px) {
+  /* Lens becomes a bottom sheet */
+  .vx-lens {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    max-height: min(62vh, 480px);
+    animation-name: vx-sheet-in;
+  }
+  @keyframes vx-sheet-in {
+    from { opacity: 0; transform: translateY(48px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .vx-lens-head { padding: 12px 14px 10px; }
+  .vx-lens-search { padding: 8px 14px; }
+  .vx-lens-body { padding: 10px 14px 14px; }
+
+  /* Toggle stays comfortable next to the timer on small screens */
+  .vx-toggle { padding: 7px 12px; font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-toggle, .vx-hl, .vx-pop, .vx-lens, .vx-card,
+  .vx-pop-scan, .vx-lens-core {
+    animation: none !important;
+  }
+}
